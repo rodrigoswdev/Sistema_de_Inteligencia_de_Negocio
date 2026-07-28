@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum EstadoGeneral {
+  ACTIVO
+  INACTIVO
+}
+
+enum Modulo {
+  VENTAS
+  FINANZAS
+  DESEMPENO
+  EJECUTIVO
+  DATOS
+}
+
+enum EstadoCarga {
+  REGISTRADA
+  VALIDANDO
+  CON_ERRORES
+  TRANSFORMANDO
+  COMPLETADA
+  FALLIDA
+  CANCELADA
+}
+
+enum SentidoKpi {
+  MAYOR_MEJOR
+  MENOR_MEJOR
+  RANGO
+  INFORMATIVO
+}
+
+enum NivelSemaforo {
+  VERDE
+  AMARILLO
+  ROJO
+  NEUTRO
+}
+
+enum Severidad {
+  CRITICA
+  ALTA
+  MEDIA
+  BAJA
+}
+
+enum EstadoAlerta {
+  ABIERTA
+  ATENDIDA
+  CERRADA
+}
+
+model Rol {
+  id          Int          @id @default(autoincrement()) @db.SmallInt
+  nombre      String       @unique @db.VarChar(50)
+  descripcion String?      @db.VarChar(250)
+  usuarios    UsuarioRol[]
+
+  @@map("rol")
+}
+
+model Usuario {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  authUserId    String?      @unique @map("auth_user_id") @db.Uuid
+  email         String       @unique @db.VarChar(180)
+  nombre        String       @db.VarChar(150)
+  estado        EstadoGeneral @default(ACTIVO)
+  ultimoAcceso  DateTime?    @map("ultimo_acceso") @db.Timestamptz(6)
+  creadoEn      DateTime     @default(now()) @map("creado_en") @db.Timestamptz(6)
+  roles         UsuarioRol[]
+  cargas        CargaDato[]
+  kpisCreados   KpiDefinicion[]
+  alertas       Alerta[]
+  reportes      Reporte[]
+  bitacora      Bitacora[]
+  copiasEjecutadas CopiaSeguridad[] @relation("CopiaEjecutor")
+  configuracionesCopia ConfiguracionCopia[] @relation("CopiaActualizador")
+
+  @@map("usuario")
+}
+
+model UsuarioRol {
+  usuarioId String   @map("usuario_id") @db.Uuid
+  rolId     Int      @map("rol_id") @db.SmallInt
+  asignadoEn DateTime @default(now()) @map("asignado_en") @db.Timestamptz(6)
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  rol       Rol      @relation(fields: [rolId], references: [id], onDelete: Restrict)
+
+  @@id([usuarioId, rolId])
+  @@map("usuario_rol")
+}
+
+model FuenteDato {
+  id                BigInt       @id @default(autoincrement())
+  nombre            String       @unique @db.VarChar(120)
+  tipo              String       @db.VarChar(30)
+  modulo            Modulo
+  frecuencia        String?      @db.VarChar(30)
+  estado            EstadoGeneral @default(ACTIVO)
+  configuracionJson Json?        @map("configuracion_json") @db.JsonB
+  cargas            CargaDato[]
+
+  @@map("fuente_dato")
+}
+
+model CargaDato {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fuenteId     BigInt      @map("fuente_id")
+  modulo       Modulo
+  periodo      String      @db.VarChar(20)
+  archivo      String?     @db.VarChar(255)
+  storagePath  String?     @map("storage_path") @db.VarChar(500)
+  checksum     String?     @db.VarChar(128)
+  datosOrigen  Json?       @map("datos_origen") @db.JsonB
+  estado       EstadoCarga @default(REGISTRADA)
+  filasTotales Int         @default(0) @map("filas_totales")
+  filasValidas Int         @default(0) @map("filas_validas")
+  filasError   Int         @default(0) @map("filas_error")
+  iniciadoPor  String      @map("iniciado_por") @db.Uuid
+  fechaInicio  DateTime    @default(now()) @map("fecha_inicio") @db.Timestamptz(6)
+  fechaFin     DateTime?   @map("fecha_fin") @db.Timestamptz(6)
+  fuente       FuenteDato  @relation(fields: [fuenteId], references: [id], onDelete: Restrict)
+  usuario      Usuario     @relation(fields: [iniciadoPor], references: [id], onDelete: Restrict)
+  errores      ErrorCarga[]
+  ventas       FactVenta[]
+  finanzas     FactFinanza[]
+  desempenos   FactDesempeno[]
+
+  @@index([modulo, periodo])
+  @@index([estado, fechaInicio])
+  @@map("carga_dato")
+}
+
+model ErrorCarga {
+  id            BigInt    @id @default(autoincrement())
+  cargaId       String    @map("carga_id") @db.Uuid
+  numeroFila    Int?      @map("numero_fila")
+  campo         String?   @db.VarChar(80)
+  codigoError   String    @map("codigo_error") @db.VarChar(40)
+  mensaje       String    @db.VarChar(500)
+  valorOriginal String?   @map("valor_original") @db.Text
+  carga         CargaDato @relation(fields: [cargaId], references: [id], onDelete: Cascade)
+
+  @@index([cargaId, numeroFila])
+  @@map("error_carga")
+}
+
+model DimFecha {
+  fechaId      Int     @id @map("fecha_id")
+  fecha        DateTime @unique @db.Date
+  dia          Int     @db.SmallInt
+  mes          Int     @db.SmallInt
+  nombreMes    String  @map("nombre_mes") @db.VarChar(15)
+  trimestre    Int     @db.SmallInt
+  anio         Int     @db.SmallInt
+  esCierreMes  Boolean @default(false) @map("es_cierre_mes")
+  ventas       FactVenta[]
+  finanzas     FactFinanza[]
+  desempenos   FactDesempeno[]
+
+  @@index([anio, mes])
+  @@map("dim_fecha")
+}
+
+model DimProducto {
+  productoId   BigInt        @id @default(autoincrement()) @map("producto_id")
+  codigo       String        @unique @db.VarChar(30)
+  nombre       String        @db.VarChar(120)
+  categoria    String        @db.VarChar(80)
+  marca        String?       @db.VarChar(80)
+  presentacion String?       @db.VarChar(80)
+  estado       EstadoGeneral @default(ACTIVO)
+  vigenteDesde DateTime      @default(now()) @map("vigente_desde") @db.Date
+  vigenteHasta DateTime?     @map("vigente_hasta") @db.Date
+  ventas       FactVenta[]
+
+  @@index([categoria, estado])
+  @@map("dim_producto")
+}
+
+model DimSucursal {
+  sucursalId BigInt        @id @default(autoincrement()) @map("sucursal_id")
+  codigo     String        @unique @db.VarChar(30)
+  nombre     String        @db.VarChar(120)
+  region     String        @db.VarChar(80)
+  ciudad     String?       @db.VarChar(80)
+  estado     EstadoGeneral @default(ACTIVO)
+  ventas     FactVenta[]
+  finanzas   FactFinanza[]
+
+  @@index([region, estado])
+  @@map("dim_sucursal")
+}
+
+model DimCanal {
+  canalId BigInt  @id @default(autoincrement()) @map("canal_id")
+  codigo  String  @unique @db.VarChar(30)
+  nombre  String  @db.VarChar(100)
+  tipo    String? @db.VarChar(50)
+  ventas  FactVenta[]
+
+  @@map("dim_canal")
+}
+
+model DimEmpleado {
+  empleadoId BigInt        @id @default(autoincrement()) @map("empleado_id")
+  codigo     String        @unique @db.VarChar(30)
+  nombre     String        @db.VarChar(120)
+  cargo      String?       @db.VarChar(100)
+  unidad     String?       @db.VarChar(100)
+  estado     EstadoGeneral @default(ACTIVO)
+  ventas     FactVenta[]
+  desempenos FactDesempeno[]
+
+  @@index([unidad, estado])
+  @@map("dim_empleado")
+}
+
+model DimCuenta {
+  cuentaId      BigInt      @id @default(autoincrement()) @map("cuenta_id")
+  codigo        String      @unique @db.VarChar(30)
+  nombre        String      @db.VarChar(150)
+  tipo          String      @db.VarChar(30)
+  nivel         Int         @db.SmallInt
+  cuentaPadreId BigInt?     @map("cuenta_padre_id")
+  cuentaPadre   DimCuenta?  @relation("JerarquiaCuenta", fields: [cuentaPadreId], references: [cuentaId])
+  subcuentas    DimCuenta[] @relation("JerarquiaCuenta")
+  finanzas      FactFinanza[]
+
+  @@index([tipo, nivel])
+  @@map("dim_cuenta")
+}
+
+model DimCentroCosto {
+  centroCostoId BigInt  @id @default(autoincrement()) @map("centro_costo_id")
+  codigo        String  @unique @db.VarChar(30)
+  nombre        String  @db.VarChar(120)
+  unidad        String? @db.VarChar(100)
+  responsable   String? @db.VarChar(120)
+  finanzas      FactFinanza[]
+
+  @@map("dim_centro_costo")
+}
+
+model DimEscenario {
+  escenarioId Int    @id @default(autoincrement()) @map("escenario_id") @db.SmallInt
+  codigo      String @unique @db.VarChar(20)
+  nombre      String @db.VarChar(60)
+  finanzas    FactFinanza[]
+
+  @@map("dim_escenario")
+}
+
+model DimUnidad {
+  unidadId   BigInt        @id @default(autoincrement()) @map("unidad_id")
+  codigo     String        @unique @db.VarChar(30)
+  nombre     String        @db.VarChar(120)
+  responsable String?      @db.VarChar(120)
+  estado     EstadoGeneral @default(ACTIVO)
+  desempenos FactDesempeno[]
+
+  @@map("dim_unidad")
+}
+
+model DimKpi {
+  kpiId        BigInt      @id @default(autoincrement()) @map("kpi_id")
+  codigo       String      @unique @db.VarChar(40)
+  nombre       String      @db.VarChar(150)
+  modulo       Modulo
+  unidadMedida String      @map("unidad_medida") @db.VarChar(30)
+  sentido      SentidoKpi
+  activo       Boolean     @default(true)
+  desempenos   FactDesempeno[]
+
+  @@index([modulo, activo])
+  @@map("dim_kpi")
+}
+
+model FactVenta {
+  ventaId    BigInt      @id @default(autoincrement()) @map("venta_id")
+  fechaId    Int         @map("fecha_id")
+  productoId BigInt      @map("producto_id")
+  sucursalId BigInt      @map("sucursal_id")
+  canalId    BigInt      @map("canal_id")
+  empleadoId BigInt?     @map("empleado_id")
+  documento  String      @db.VarChar(50)
+  cantidad   Decimal     @db.Decimal(18, 3)
+  ventaBruta Decimal     @map("venta_bruta") @db.Decimal(18, 2)
+  descuento  Decimal     @default(0) @db.Decimal(18, 2)
+  devolucion Decimal     @default(0) @db.Decimal(18, 2)
+  ventaNeta  Decimal     @map("venta_neta") @db.Decimal(18, 2)
+  costo      Decimal     @db.Decimal(18, 2)
+  margen     Decimal     @db.Decimal(18, 2)
+  metaVenta  Decimal     @default(0) @map("meta_venta") @db.Decimal(18, 2)
+  cargaId    String      @map("carga_id") @db.Uuid
+  fecha      DimFecha    @relation(fields: [fechaId], references: [fechaId], onDelete: Restrict)
+  producto   DimProducto @relation(fields: [productoId], references: [productoId], onDelete: Restrict)
+  sucursal   DimSucursal @relation(fields: [sucursalId], references: [sucursalId], onDelete: Restrict)
+  canal      DimCanal    @relation(fields: [canalId], references: [canalId], onDelete: Restrict)
+  empleado   DimEmpleado? @relation(fields: [empleadoId], references: [empleadoId], onDelete: SetNull)
+  carga      CargaDato   @relation(fields: [cargaId], references: [id], onDelete: Restrict)
+
+  @@unique([documento, productoId])
+  @@index([fechaId, sucursalId, canalId])
+  @@index([productoId, fechaId])
+  @@map("fact_venta")
+}
+
+model FactFinanza {
+  finanzaId    BigInt         @id @default(autoincrement()) @map("finanza_id")
+  fechaId      Int            @map("fecha_id")
+  cuentaId     BigInt         @map("cuenta_id")
+  centroCostoId BigInt?       @map("centro_costo_id")
+  sucursalId   BigInt?        @map("sucursal_id")
+  escenarioId  Int            @map("escenario_id") @db.SmallInt
+  importe      Decimal        @db.Decimal(18, 2)
+  debito       Decimal        @default(0) @db.Decimal(18, 2)
+  credito      Decimal        @default(0) @db.Decimal(18, 2)
+  cargaId      String         @map("carga_id") @db.Uuid
+  fecha        DimFecha       @relation(fields: [fechaId], references: [fechaId], onDelete: Restrict)
+  cuenta       DimCuenta      @relation(fields: [cuentaId], references: [cuentaId], onDelete: Restrict)
+  centroCosto  DimCentroCosto? @relation(fields: [centroCostoId], references: [centroCostoId], onDelete: SetNull)
+  sucursal     DimSucursal?   @relation(fields: [sucursalId], references: [sucursalId], onDelete: SetNull)
+  escenario    DimEscenario   @relation(fields: [escenarioId], references: [escenarioId], onDelete: Restrict)
+  carga        CargaDato      @relation(fields: [cargaId], references: [id], onDelete: Restrict)
+
+  @@index([fechaId, escenarioId])
+  @@index([cuentaId, centroCostoId])
+  @@map("fact_finanza")
+}
+
+model FactDesempeno {
+  desempenoId BigInt       @id @default(autoincrement()) @map("desempeno_id")
+  fechaId     Int          @map("fecha_id")
+  kpiId       BigInt       @map("kpi_id")
+  unidadId    BigInt       @map("unidad_id")
+  empleadoId  BigInt?      @map("empleado_id")
+  valorMeta   Decimal      @map("valor_meta") @db.Decimal(18, 4)
+  valorReal   Decimal      @map("valor_real") @db.Decimal(18, 4)
+  cumplimiento Decimal     @db.Decimal(9, 4)
+  estado      NivelSemaforo
+  cargaId     String       @map("carga_id") @db.Uuid
+  fecha       DimFecha     @relation(fields: [fechaId], references: [fechaId], onDelete: Restrict)
+  kpi         DimKpi       @relation(fields: [kpiId], references: [kpiId], onDelete: Restrict)
+  unidad      DimUnidad    @relation(fields: [unidadId], references: [unidadId], onDelete: Restrict)
+  empleado    DimEmpleado? @relation(fields: [empleadoId], references: [empleadoId], onDelete: SetNull)
+  carga       CargaDato    @relation(fields: [cargaId], references: [id], onDelete: Restrict)
+
+  @@unique([fechaId, kpiId, unidadId])
+  @@index([fechaId, estado])
+  @@map("fact_desempeno")
+}
+
+model KpiDefinicion {
+  id          BigInt      @id @default(autoincrement())
+  codigo      String      @unique @db.VarChar(40)
+  nombre      String      @db.VarChar(150)
+  modulo      Modulo
+  formula     String      @db.Text
+  unidad      String      @db.VarChar(30)
+  sentido     SentidoKpi
+  periodicidad String     @db.VarChar(20)
+  meta        Decimal?    @db.Decimal(18, 4)
+  activo      Boolean     @default(true)
+  creadoPor   String      @map("creado_por") @db.Uuid
+  creadoEn    DateTime    @default(now()) @map("creado_en") @db.Timestamptz(6)
+  usuario     Usuario     @relation(fields: [creadoPor], references: [id], onDelete: Restrict)
+  umbrales    KpiUmbral[]
+  alertas     Alerta[]
+
+  @@index([modulo, activo])
+  @@map("kpi_definicion")
+}
+
+model KpiUmbral {
+  id           BigInt        @id @default(autoincrement())
+  kpiId        BigInt        @map("kpi_id")
+  nivel        NivelSemaforo
+  valorDesde   Decimal?      @map("valor_desde") @db.Decimal(18, 4)
+  valorHasta   Decimal?      @map("valor_hasta") @db.Decimal(18, 4)
+  colorTailwind String       @map("color_tailwind") @db.VarChar(80)
+  vigenteDesde DateTime      @default(now()) @map("vigente_desde") @db.Date
+  kpi          KpiDefinicion @relation(fields: [kpiId], references: [id], onDelete: Cascade)
+
+  @@unique([kpiId, nivel, vigenteDesde])
+  @@map("kpi_umbral")
+}
+
+model Alerta {
+  id            BigInt       @id @default(autoincrement())
+  kpiId         BigInt?      @map("kpi_id")
+  periodo       String       @db.VarChar(20)
+  severidad     Severidad
+  mensaje       String       @db.VarChar(500)
+  estado        EstadoAlerta @default(ABIERTA)
+  responsableId String?      @map("responsable_id") @db.Uuid
+  creadaEn      DateTime     @default(now()) @map("creada_en") @db.Timestamptz(6)
+  atendidaEn    DateTime?    @map("atendida_en") @db.Timestamptz(6)
+  comentario    String?      @db.Text
+  kpi           KpiDefinicion? @relation(fields: [kpiId], references: [id], onDelete: SetNull)
+  responsable   Usuario?     @relation(fields: [responsableId], references: [id], onDelete: SetNull)
+
+  @@index([estado, severidad, creadaEn])
+  @@map("alerta")
+}
+
+model Reporte {
+  id                BigInt        @id @default(autoincrement())
+  nombre            String        @db.VarChar(150)
+  tipo              String        @db.VarChar(30)
+  configuracionJson Json          @map("configuracion_json") @db.JsonB
+  creadoPor         String        @map("creado_por") @db.Uuid
+  estado            EstadoGeneral @default(ACTIVO)
+  creadoEn          DateTime      @default(now()) @map("creado_en") @db.Timestamptz(6)
+  usuario           Usuario       @relation(fields: [creadoPor], references: [id], onDelete: Restrict)
+  programaciones    ReporteProgramado[]
+
+  @@index([tipo, estado])
+  @@map("reporte")
+}
+
+model ReporteProgramado {
+  id               BigInt   @id @default(autoincrement())
+  reporteId        BigInt   @map("reporte_id")
+  frecuencia       String   @db.VarChar(40)
+  destinatarios    String   @db.Text
+  proximaEjecucion DateTime @map("proxima_ejecucion") @db.Timestamptz(6)
+  activo           Boolean  @default(true)
+  reporte          Reporte  @relation(fields: [reporteId], references: [id], onDelete: Cascade)
+
+  @@index([activo, proximaEjecucion])
+  @@map("reporte_programado")
+}
+
+model Bitacora {
+  id          BigInt   @id @default(autoincrement())
+  usuarioId   String?  @map("usuario_id") @db.Uuid
+  accion      String   @db.VarChar(80)
+  entidad     String   @db.VarChar(80)
+  entidadId   String?  @map("entidad_id") @db.VarChar(80)
+  fecha       DateTime @default(now()) @db.Timestamptz(6)
+  resultado   String   @db.VarChar(20)
+  detalleJson Json?    @map("detalle_json") @db.JsonB
+  ipHash      String?  @map("ip_hash") @db.VarChar(128)
+  usuario     Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId, fecha])
+  @@index([entidad, entidadId])
+  @@map("bitacora")
+}
+
+model ConfiguracionCopia {
+  id               Int      @id @default(1) @db.SmallInt
+  frecuencia       String   @default("SEMANAL") @db.VarChar(20)
+  hora             String   @default("02:00") @db.VarChar(5)
+  diaSemana        Int?     @map("dia_semana") @db.SmallInt
+  diaMes           Int?     @map("dia_mes") @db.SmallInt
+  retencion        Int      @default(12) @db.SmallInt
+  incluirAuditoria Boolean  @default(true) @map("incluir_auditoria")
+  activo           Boolean  @default(true)
+  actualizadoPor   String?  @map("actualizado_por") @db.Uuid
+  actualizadoEn    DateTime @default(now()) @updatedAt @map("actualizado_en") @db.Timestamptz(6)
+  usuario          Usuario? @relation("CopiaActualizador", fields: [actualizadoPor], references: [id], onDelete: SetNull)
+
+  @@map("configuracion_copia")
+}
+
+model CopiaSeguridad {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  tipo        String   @db.VarChar(20)
+  estado      String   @db.VarChar(20)
+  archivo     String?  @db.VarChar(255)
+  storagePath String?  @map("storage_path") @db.VarChar(500)
+  tamanoBytes BigInt?  @map("tamano_bytes")
+  checksum    String?  @db.VarChar(128)
+  tablas      Int      @default(0) @db.SmallInt
+  iniciadoPor String?  @map("iniciado_por") @db.Uuid
+  iniciadoEn  DateTime @default(now()) @map("iniciado_en") @db.Timestamptz(6)
+  finalizadoEn DateTime? @map("finalizado_en") @db.Timestamptz(6)
+  error       String?  @db.Text
+  usuario     Usuario? @relation("CopiaEjecutor", fields: [iniciadoPor], references: [id], onDelete: SetNull)
+
+  @@index([estado, iniciadoEn])
+  @@map("copia_seguridad")
+}

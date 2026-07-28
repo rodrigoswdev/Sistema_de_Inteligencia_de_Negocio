@@ -1,0 +1,19 @@
+import { getFinanceAnalytics, getMetadata } from "@/lib/services/analytics";
+import { filtersFromSearchParams } from "@/lib/analytics/filters";
+import { Bars, DataFreshness, FilterBar, KpiGrid, PageHeader } from "@/components/dashboard/ui";
+import { formatMoney } from "@/lib/format";
+
+export default async function FinancePage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const filters = filtersFromSearchParams(await searchParams);
+  const [data, options] = await Promise.all([getFinanceAnalytics(filters), getMetadata()]);
+  return <>
+    <PageHeader title="Análisis financiero" subtitle="Estado de resultados, presupuesto y centros de costo" />
+    <DataFreshness updatedAt={data.updatedAt} source={data.dataSource} />
+    <FilterBar filters={filters} options={options} /><KpiGrid values={data.kpis} />
+    <section className="grid-2">
+      <article className="card panel"><h2 className="panel-title">Real frente a presupuesto</h2><Bars data={data.monthly} /></article>
+      <article className="card panel"><h2 className="panel-title">Gasto por centro de costo</h2><Bars data={data.byCostCenter} orange /></article>
+    </section>
+    <article className="card panel"><h2 className="panel-title">Estado de resultados resumido</h2><table><thead><tr><th>Concepto</th><th>Real</th><th>Presupuesto</th><th>Variación</th></tr></thead><tbody>{data.statement.map(row => <tr key={row.concept}><td>{row.concept}</td><td>{formatMoney(row.real)}</td><td>{formatMoney(row.budget)}</td><td>{((row.real-row.budget)/row.budget*100).toFixed(1)}%</td></tr>)}</tbody></table></article>
+  </>;
+}

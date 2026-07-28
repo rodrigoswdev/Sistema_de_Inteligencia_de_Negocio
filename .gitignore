@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.tmp-packages/
+tsconfig.tsbuildinfo
+dist/
+coverage/
+.env
+*.log
+.DS_Store
+Thumbs.db

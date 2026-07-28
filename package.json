@@ -1,0 +1,48 @@
+{
+  "name": "sibi-cbn",
+  "version": "2.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/next.mjs dev",
+    "build": "node node_modules/prisma/build/index.js generate && node scripts/next.mjs build",
+    "start": "node scripts/next.mjs start",
+    "lint": "node node_modules/eslint/bin/eslint.js .",
+    "typecheck": "node node_modules/typescript/bin/tsc --noEmit",
+    "test": "node node_modules/vitest/vitest.mjs run",
+    "db:generate": "node node_modules/prisma/build/index.js generate",
+    "db:migrate": "node scripts/run-sql.mjs supabase/migrations/202607260001_sibi_cbn.sql supabase/migrations/202607260002_copias_seguridad.sql",
+    "db:migrate:backups": "node scripts/run-sql.mjs supabase/migrations/202607260002_copias_seguridad.sql",
+    "db:seed": "node node_modules/tsx/dist/cli.mjs scripts/seed/index.ts",
+    "db:studio": "node node_modules/prisma/build/index.js studio",
+    "supabase:verify": "node scripts/verify-supabase.mjs"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "6.19.3",
+    "@prisma/client": "6.19.3",
+    "@supabase/ssr": "0.8.0",
+    "@supabase/supabase-js": "2.110.8",
+    "dotenv": "16.6.1",
+    "jose": "6.2.4",
+    "lucide-react": "0.468.0",
+    "next": "16.2.12",
+    "pg": "8.22.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "zod": "4.4.3"
+  },
+  "devDependencies": {
+    "@next/swc-wasm-nodejs": "16.2.12",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "22.20.1",
+    "@types/pg": "8.20.0",
+    "@types/react": "19.2.17",
+    "@types/react-dom": "19.2.3",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.2.12",
+    "prisma": "6.19.3",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.23.1",
+    "typescript": "5.9.3",
+    "vitest": "4.1.10"
+  }
+}
