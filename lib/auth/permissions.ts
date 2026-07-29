@@ -32,3 +32,10 @@ export const ROLE_LABELS: Record<AppRole, string> = {
 export function isAdmin(user: SessionUser) {
   return user.roles.includes("ADMINISTRADOR");
 }
+
+export function landingPath(user: SessionUser) {
+  if (user.roles.includes("VENTAS")) return "/ventas";
+  if (user.roles.includes("FINANZAS")) return "/finanzas";
+  if (user.roles.includes("DESEMPENO")) return "/desempeno";
+  return "/";
+}

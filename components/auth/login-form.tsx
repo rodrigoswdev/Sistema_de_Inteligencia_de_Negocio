@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { landingPath } from "@/lib/auth/permissions";
+import type { SessionUser } from "@/lib/types";
 
 export function LoginForm() {
   const router = useRouter();
@@ -21,7 +23,7 @@ export function LoginForm() {
     const result = await response.json();
     setLoading(false);
     if (!response.ok) return setError(result.message ?? "No fue posible iniciar sesión");
-    router.push("/");
+    router.push(landingPath(result.data as SessionUser));
     router.refresh();
   }
 

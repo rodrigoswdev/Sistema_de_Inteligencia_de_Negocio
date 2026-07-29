@@ -54,14 +54,6 @@ export function UserManager() {
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
 
-  // NUEVO: Estado para el formulario
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: roles.length > 0 ? roles[0].name : '' // Inicializar con el primer rol disponible
-  });
-
   async function load() {
     const {
       usersResponse,
@@ -74,13 +66,7 @@ export function UserManager() {
     setLoading(false);
     if (!usersResponse.ok) return setMessage(usersResult.message);
     setUsers(usersResult.data);
-    if (rolesResponse.ok) {
-      setRoles(rolesResult.data);
-      // Si hay roles y el formData no tiene un rol seleccionado, seleccionar el primero
-      if (rolesResult.data.length > 0 && !formData.role) {
-        setFormData(prev => ({ ...prev, role: rolesResult.data[0].name }));
-      }
-    }
+    if (rolesResponse.ok) setRoles(rolesResult.data);
     if (auditResponse.ok) setAudit(auditResult.data);
   }
 
@@ -94,13 +80,7 @@ export function UserManager() {
         return;
       }
       setUsers(data.usersResult.data);
-      if (data.rolesResponse.ok) {
-        setRoles(data.rolesResult.data);
-        // Inicializar el rol seleccionado
-        if (data.rolesResult.data.length > 0) {
-          setFormData(prev => ({ ...prev, role: data.rolesResult.data[0].name }));
-        }
-      }
+      if (data.rolesResponse.ok) setRoles(data.rolesResult.data);
       if (data.auditResponse.ok) setAudit(data.auditResult.data);
     });
     return () => {
@@ -108,45 +88,24 @@ export function UserManager() {
     };
   }, []);
 
-  // NUEVO: Manejador de cambios del formulario
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  // MODIFICADO: create ahora usa formData
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    
-    try {
-      const response = await fetch("/api/admin/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-          roles: [formData.role],
-        }),
-      });
-      const result = await response.json();
-      setMessage(result.message);
-      
-      if (response.ok) {
-        // Resetear el formulario usando el estado
-        setFormData({
-          name: '',
-          email: '',
-          password: '',
-          role: roles.length > 0 ? roles[0].name : ''
-        });
-        await load();
-      }
-    } catch (error) {
-      console.error('Error:', error);
-      setMessage('Error al crear usuario');
+    const form = new FormData(event.currentTarget);
+    const response = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: form.get("name"),
+        email: form.get("email"),
+        password: form.get("password"),
+        roles: [form.get("role")],
+      }),
+    });
+    const result = await response.json();
+    setMessage(result.message);
+    if (response.ok) {
+      event.currentTarget.reset();
+      await load();
     }
   }
 
@@ -166,45 +125,10 @@ export function UserManager() {
       <section className="card panel" style={{ marginBottom: 18 }}>
         <h2 className="panel-title">Crear usuario y asignar rol</h2>
         <form className="filters" style={{ padding: 0, margin: 0 }} onSubmit={create}>
-          <label className="field">Nombre
-            <input 
-              name="name" 
-              value={formData.name}
-              onChange={handleChange}
-              required 
-            />
-          </label>
-          <label className="field">Correo
-            <input 
-              name="email" 
-              type="email" 
-              value={formData.email}
-              onChange={handleChange}
-              required 
-            />
-          </label>
-          <label className="field">Contraseña temporal
-            <input 
-              name="password" 
-              type="password" 
-              minLength={8} 
-              value={formData.password}
-              onChange={handleChange}
-              required 
-            />
-          </label>
-          <label className="field">Rol
-            <select 
-              name="role" 
-              value={formData.role}
-              onChange={handleChange}
-              required
-            >
-              {roles.map((role) => (
-                <option key={role.id} value={role.name}>{role.name}</option>
-              ))}
-            </select>
-          </label>
+          <label className="field">Nombre<input name="name" required /></label>
+          <label className="field">Correo<input name="email" type="email" required /></label>
+          <label className="field">Contraseña temporal<input name="password" type="password" minLength={8} required /></label>
+          <label className="field">Rol<select name="role" required>{roles.map((role) => <option key={role.id} value={role.name}>{role.name}</option>)}</select></label>
           <button className="button" style={{ alignSelf: "end" }}>Crear usuario</button>
         </form>
         {message && <div className="demo-note">{message}</div>}

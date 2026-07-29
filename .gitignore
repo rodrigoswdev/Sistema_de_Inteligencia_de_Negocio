@@ -6,5 +6,7 @@ dist/
 coverage/
 .env
 *.log
+*.json.gz
+backups/
 .DS_Store
 Thumbs.db
