@@ -33,7 +33,8 @@ export function ReportManager({
 
   async function create(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const form = new FormData(event.currentTarget);
+    const formElement = event.currentTarget;
+    const form = new FormData(formElement);
     const body = {
       name: form.get("name"),
       module: form.get("module"),
@@ -52,7 +53,7 @@ export function ReportManager({
     const result = await response.json();
     setMessage(result.message);
     if (response.ok) {
-      event.currentTarget.reset();
+      formElement.reset();
       await reload();
     }
   }

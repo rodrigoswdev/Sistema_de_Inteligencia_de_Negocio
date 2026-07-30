@@ -15,6 +15,7 @@ import type {
   ValidatedImport,
 } from "@/lib/imports/types";
 import { prisma } from "@/lib/prisma";
+import { addDemoSalesRows } from "@/lib/repositories/analytics";
 import type { ImportModule } from "@/lib/validators/imports";
 import { validateImport } from "@/lib/imports/validation";
 
@@ -196,6 +197,12 @@ export async function registerAndProcessImport(input: {
       sourceId: input.sourceId,
     };
     demoStore.set(id, load);
+    if (
+      input.validation.module === "VENTAS" &&
+      input.validation.errors.length === 0
+    ) {
+      addDemoSalesRows(input.validation.rows);
+    }
     return demoView(load);
   }
 

@@ -1,8 +1,16 @@
 import type { AppRole, SessionUser } from "@/lib/types";
 
+export const SALES_ACCESS_ROLES: AppRole[] = [
+  "ADMINISTRADOR",
+  "ANALISTA_BI",
+  "VENTAS",
+  "GERENCIA",
+  "AUDITOR",
+];
+
 export const ROUTE_ACCESS: Record<string, AppRole[]> = {
   "/": ["ADMINISTRADOR", "ANALISTA_BI", "GERENCIA", "AUDITOR"],
-  "/ventas": ["ADMINISTRADOR", "ANALISTA_BI", "VENTAS", "GERENCIA", "AUDITOR"],
+  "/ventas": SALES_ACCESS_ROLES,
   "/finanzas": ["ADMINISTRADOR", "ANALISTA_BI", "FINANZAS", "GERENCIA", "AUDITOR"],
   "/desempeno": ["ADMINISTRADOR", "ANALISTA_BI", "DESEMPENO", "GERENCIA", "AUDITOR"],
   "/reportes": ["ADMINISTRADOR", "ANALISTA_BI", "GERENCIA", "AUDITOR"],
@@ -17,6 +25,10 @@ export const ROUTE_ACCESS: Record<string, AppRole[]> = {
 export function canAccess(user: SessionUser, path: string) {
   const roles = ROUTE_ACCESS[path] ?? ROUTE_ACCESS["/"];
   return user.roles.some((role) => roles.includes(role));
+}
+
+export function canRegisterSales(user: SessionUser) {
+  return user.roles.some((role) => SALES_ACCESS_ROLES.includes(role));
 }
 
 export const ROLE_LABELS: Record<AppRole, string> = {

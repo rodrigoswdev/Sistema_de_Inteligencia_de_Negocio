@@ -12,6 +12,40 @@ export type ReportModule =
   | "FINANZAS"
   | "DESEMPENO";
 
+export const REPORT_MODULE_LABELS: Record<ReportModule, string> = {
+  EJECUTIVO: "Ejecutivo",
+  VENTAS: "Ventas",
+  FINANZAS: "Finanzas",
+  DESEMPENO: "Desempeño",
+};
+
+export function reportMetadata(
+  filters: AnalyticsFilters,
+  rowCount: number,
+) {
+  const labels: Record<keyof AnalyticsFilters, string> = {
+    from: "Desde",
+    to: "Hasta",
+    region: "Región",
+    product: "Producto",
+    channel: "Canal",
+    unit: "Unidad",
+    scenario: "Escenario",
+  };
+  const activeFilters = Object.entries(filters)
+    .filter((entry): entry is [keyof AnalyticsFilters, string] =>
+      Boolean(entry[1]),
+    )
+    .map(([key, value]) => `${labels[key]}: ${value}`);
+  return [
+    `Registros incluidos: ${rowCount}`,
+    activeFilters.length
+      ? `Filtros aplicados: ${activeFilters.join(" · ")}`
+      : "Filtros aplicados: todos los registros",
+    "Zona horaria: America/La_Paz",
+  ];
+}
+
 export async function reportRows(
   module: ReportModule,
   filters: AnalyticsFilters,

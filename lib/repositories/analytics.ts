@@ -56,6 +56,61 @@ export interface AnalyticsDataset<T> {
   source: "SUPABASE" | "DEMO" | "DEMO_FALLBACK";
 }
 
+const globalAnalytics = globalThis as unknown as {
+  sibiDemoSales?: Map<string, SalesAnalyticsRow>;
+  sibiDemoSalesUpdatedAt?: string;
+};
+
+const demoSalesStore =
+  globalAnalytics.sibiDemoSales ??
+  new Map(
+    sales.map((sale) => [
+      sale.id,
+      { ...sale } satisfies SalesAnalyticsRow,
+    ]),
+  );
+globalAnalytics.sibiDemoSales = demoSalesStore;
+
+export function addDemoSalesRows(rows: Array<Record<string, string>>) {
+  const created: SalesAnalyticsRow[] = [];
+  for (const input of rows) {
+    const gross = Number(input.venta_bruta);
+    const discounts = Number(input.descuento || 0);
+    const returns = Number(input.devolucion || 0);
+    const cost = Number(input.costo);
+    const net = gross - discounts - returns;
+    const existing = [...demoSalesStore.values()].find(
+      (sale) =>
+        sale.document === input.documento &&
+        sale.product === input.producto_nombre,
+    );
+    const sale: SalesAnalyticsRow = {
+      id: existing?.id ?? crypto.randomUUID(),
+      date: input.fecha,
+      document: input.documento,
+      region: input.region,
+      department: input.sucursal_nombre,
+      branch: input.sucursal_nombre,
+      product: input.producto_nombre,
+      category: input.categoria,
+      channel: input.canal_nombre,
+      employee: input.empleado_nombre || "Sin asignar",
+      quantity: Number(input.cantidad),
+      gross,
+      discounts,
+      returns,
+      net,
+      cost,
+      margin: net - cost,
+      target: Number(input.meta_venta || 0),
+    };
+    demoSalesStore.set(sale.id, sale);
+    created.push(sale);
+  }
+  globalAnalytics.sibiDemoSalesUpdatedAt = new Date().toISOString();
+  return created;
+}
+
 const isoDate = (value: Date) => value.toISOString().slice(0, 10);
 
 async function latestUpdate(module: "VENTAS" | "FINANZAS" | "DESEMPENO") {
@@ -79,7 +134,11 @@ export async function loadSalesRows(): Promise<
   AnalyticsDataset<SalesAnalyticsRow>
 > {
   if (isDemoMode()) {
-    return { rows: sales, updatedAt: DATA_UPDATED_AT, source: "DEMO" };
+    return {
+      rows: [...demoSalesStore.values()],
+      updatedAt: globalAnalytics.sibiDemoSalesUpdatedAt ?? DATA_UPDATED_AT,
+      source: "DEMO",
+    };
   }
   try {
     const records = await prisma.factVenta.findMany({
@@ -118,7 +177,7 @@ export async function loadSalesRows(): Promise<
       source: "SUPABASE",
     };
   } catch (error) {
-    return fallback(sales, error);
+    return fallback([...demoSalesStore.values()], error);
   }
 }
 

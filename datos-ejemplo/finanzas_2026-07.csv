@@ -1,0 +1,11 @@
+fecha,cuenta_codigo,cuenta_nombre,tipo_cuenta,nivel,centro_costo_codigo,centro_costo_nombre,sucursal_codigo,sucursal_nombre,region,escenario_codigo,escenario_nombre,importe,debito,credito
+2026-07-31,4100,Ingresos por ventas,INGRESO,1,CC-101,Comercial,SUC-01,La Paz,Occidente,REAL,Real,38750.00,38750.00,0.00
+2026-07-31,4100,Ingresos por ventas,INGRESO,1,CC-102,Comercial Oriente,SUC-02,Santa Cruz,Oriente,REAL,41200.00,41200.00,0.00
+2026-07-31,5100,Costo de ventas,COSTO,1,CC-201,Operaciones,SUC-01,La Paz,Occidente,REAL,21450.00,0.00,21450.00
+2026-07-31,5100,Costo de ventas,COSTO,1,CC-202,Operaciones Oriente,SUC-02,Santa Cruz,Oriente,REAL,22680.00,0.00,22680.00
+2026-07-31,6100,Gastos administrativos,GASTO,1,CC-301,Administración,SUC-01,La Paz,Occidente,REAL,7850.00,0.00,7850.00
+2026-07-31,6200,Gastos comerciales,GASTO,1,CC-101,Comercial,SUC-01,La Paz,Occidente,REAL,5320.00,0.00,5320.00
+2026-07-31,4100,Ingresos por ventas,INGRESO,1,CC-101,Comercial,SUC-01,La Paz,Occidente,PRESUPUESTO,Presupuesto,40000.00,0.00,0.00
+2026-07-31,4100,Ingresos por ventas,INGRESO,1,CC-102,Comercial Oriente,SUC-02,Santa Cruz,Oriente,PRESUPUESTO,Presupuesto,42500.00,0.00,0.00
+2026-07-31,5100,Costo de ventas,COSTO,1,CC-201,Operaciones,SUC-01,La Paz,Occidente,PRESUPUESTO,Presupuesto,22000.00,0.00,0.00
+2026-07-31,6100,Gastos administrativos,GASTO,1,CC-301,Administración,SUC-01,La Paz,Occidente,PRESUPUESTO,Presupuesto,8000.00,0.00,0.00

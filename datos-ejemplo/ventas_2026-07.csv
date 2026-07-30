@@ -1,0 +1,11 @@
+fecha,documento,producto_codigo,producto_nombre,categoria,sucursal_codigo,sucursal_nombre,region,canal_codigo,canal_nombre,empleado_codigo,empleado_nombre,cantidad,venta_bruta,descuento,devolucion,costo,meta_venta
+2026-07-01,EJ-VEN-202607-001,PROD-01,Paceña Pilsener,Cervezas,SUC-01,La Paz,Occidente,TRAD,Tradicional,EMP-01,Ana Pérez,120,8400.00,150.00,0.00,4700.00,9000.00
+2026-07-03,EJ-VEN-202607-002,PROD-02,Huari Tradicional,Cervezas,SUC-02,Santa Cruz,Oriente,MOD,Moderno,EMP-02,Carlos Rojas,95,8075.00,200.00,50.00,4550.00,8200.00
+2026-07-05,EJ-VEN-202607-003,PROD-03,Malta Real,Bebidas de malta,SUC-03,Cochabamba,Centro,DIST,Distribuidor,EMP-03,María López,160,6400.00,100.00,0.00,3520.00,6800.00
+2026-07-08,EJ-VEN-202607-004,PROD-01,Paceña Pilsener,Cervezas,SUC-04,Sucre,Sur,MOD,Moderno,EMP-04,José Fernández,80,5600.00,75.00,25.00,3120.00,5900.00
+2026-07-11,EJ-VEN-202607-005,PROD-02,Huari Tradicional,Cervezas,SUC-01,La Paz,Occidente,DIST,Distribuidor,EMP-01,Ana Pérez,110,9350.00,250.00,0.00,5280.00,9500.00
+2026-07-14,EJ-VEN-202607-006,PROD-03,Malta Real,Bebidas de malta,SUC-02,Santa Cruz,Oriente,TRAD,Tradicional,EMP-02,Carlos Rojas,190,7600.00,180.00,40.00,4180.00,7800.00
+2026-07-18,EJ-VEN-202607-007,PROD-01,Paceña Pilsener,Cervezas,SUC-03,Cochabamba,Centro,TRAD,Tradicional,EMP-03,María López,135,9450.00,120.00,0.00,5265.00,9600.00
+2026-07-21,EJ-VEN-202607-008,PROD-02,Huari Tradicional,Cervezas,SUC-04,Sucre,Sur,DIST,Distribuidor,EMP-04,José Fernández,75,6375.00,100.00,0.00,3600.00,6500.00
+2026-07-25,EJ-VEN-202607-009,PROD-03,Malta Real,Bebidas de malta,SUC-01,La Paz,Occidente,MOD,Moderno,EMP-01,Ana Pérez,210,8400.00,220.00,60.00,4620.00,8700.00
+2026-07-28,EJ-VEN-202607-010,PROD-01,Paceña Pilsener,Cervezas,SUC-02,Santa Cruz,Oriente,DIST,Distribuidor,EMP-02,Carlos Rojas,145,10150.00,175.00,25.00,5655.00,10400.00

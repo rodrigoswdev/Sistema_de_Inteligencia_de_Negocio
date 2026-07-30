@@ -18,12 +18,13 @@ export function UploadForm({ onCompleted }: { onCompleted?: () => void }) {
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    const formElement = event.currentTarget;
     setLoading(true);
     setMessage("");
     try {
       const response = await fetch("/api/imports", {
         method: "POST",
-        body: new FormData(event.currentTarget),
+        body: new FormData(formElement),
       });
       const result = (await response.json()) as Envelope<LoadView>;
       setMessage(
@@ -32,7 +33,7 @@ export function UploadForm({ onCompleted }: { onCompleted?: () => void }) {
           : result.message,
       );
       if (response.ok) {
-        event.currentTarget.reset();
+        formElement.reset();
         setModule("VENTAS");
         onCompleted?.();
       }
@@ -67,7 +68,7 @@ export function UploadForm({ onCompleted }: { onCompleted?: () => void }) {
       </label>
       <label className="field" style={{ flex: 1 }}>
         Archivo CSV UTF-8
-        <input name="file" type="file" accept=".csv,.xlsx" required />
+        <input name="file" type="file" accept=".csv,text/csv" required />
       </label>
       <button
         className="button orange"

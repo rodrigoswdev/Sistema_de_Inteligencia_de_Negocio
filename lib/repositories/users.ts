@@ -21,15 +21,31 @@ const allowedRoles: AppRole[] = [
 const isAppRole = (value: string): value is AppRole =>
   allowedRoles.includes(value as AppRole);
 
+type DemoUser = (typeof demoUsers)[number];
+
+const globalUsers = globalThis as unknown as {
+  sibiDemoUsers?: Map<string, DemoUser>;
+};
+
+const demoUserStore =
+  globalUsers.sibiDemoUsers ??
+  new Map(
+    demoUsers.map((user) => [
+      user.id,
+      { ...user, roles: [...user.roles] },
+    ]),
+  );
+globalUsers.sibiDemoUsers = demoUserStore;
+
 export async function findDemoUser(email: string) {
-  return demoUsers.find(
+  return [...demoUserStore.values()].find(
     (user) => user.email.toLowerCase() === email.trim().toLowerCase(),
   );
 }
 
 export async function listUsers() {
   if (isDemoMode()) {
-    return demoUsers.map((user) => ({
+    return [...demoUserStore.values()].map((user) => ({
       id: user.id,
       name: user.name,
       email: user.email,
@@ -97,12 +113,25 @@ export async function createUser(input: {
   roles: AppRole[];
 }) {
   if (isDemoMode()) {
-    return {
+    const duplicated = await findDemoUser(input.email);
+    if (duplicated) {
+      throw new Error("Ya existe un usuario con este correo electrónico.");
+    }
+    const user: DemoUser = {
       id: crypto.randomUUID(),
       name: input.name,
-      email: input.email,
-      roles: input.roles,
+      email: input.email.trim().toLowerCase(),
+      password: input.password,
+      roles: [...input.roles],
       active: true,
+    };
+    demoUserStore.set(user.id, user);
+    return {
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      roles: user.roles,
+      active: user.active,
     };
   }
   if (!isSupabaseAdminConfigured()) {
@@ -161,14 +190,23 @@ export async function updateUser(
   },
 ) {
   if (isDemoMode()) {
-    const current = demoUsers.find((user) => user.id === id);
+    const current = demoUserStore.get(id);
     if (!current) throw new Error("Usuario no encontrado.");
-    return {
-      id,
+    const updated: DemoUser = {
+      ...current,
       name: input.name ?? current.name,
-      email: current.email,
-      roles: input.roles ?? current.roles,
-      active: (input.state ?? (current.active ? "ACTIVO" : "INACTIVO")) === "ACTIVO",
+      roles: input.roles ? [...input.roles] : current.roles,
+      active:
+        (input.state ?? (current.active ? "ACTIVO" : "INACTIVO")) ===
+        "ACTIVO",
+    };
+    demoUserStore.set(id, updated);
+    return {
+      id: updated.id,
+      name: updated.name,
+      email: updated.email,
+      roles: updated.roles,
+      active: updated.active,
     };
   }
 

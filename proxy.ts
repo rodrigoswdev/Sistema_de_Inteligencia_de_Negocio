@@ -12,7 +12,14 @@ export async function proxy(request: NextRequest) {
     const secret = new TextEncoder().encode(process.env.AUTH_SECRET ?? "cbn-demo-secret-change-in-production-2026");
     const { payload } = await jwtVerify(token, secret);
     const user = payload.user as SessionUser;
+    const exportModule = request.nextUrl.searchParams.get("module");
+    const exportRoute =
+      exportModule === "VENTAS" ? "/ventas" :
+      exportModule === "FINANZAS" ? "/finanzas" :
+      exportModule === "DESEMPENO" ? "/desempeno" :
+      "/";
     const apiRoute =
+      path.startsWith("/api/sales") ? "/ventas" :
       path.startsWith("/api/analytics/sales") ? "/ventas" :
       path.startsWith("/api/analytics/finance") ? "/finanzas" :
       path.startsWith("/api/analytics/performance") ? "/desempeno" :
@@ -21,6 +28,7 @@ export async function proxy(request: NextRequest) {
       path.startsWith("/api/admin/sources") ? "/fuentes" :
       path.startsWith("/api/admin") || path.startsWith("/api/kpis") ? "/administracion" :
       path.startsWith("/api/audit") ? "/auditoria" :
+      path.startsWith("/api/reports/export") ? exportRoute :
       path.startsWith("/api/reports") ? "/reportes" :
       path.startsWith("/api/alerts") ? "/alertas" :
       null;
