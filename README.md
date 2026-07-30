@@ -72,4 +72,5 @@ supabase/migrations/ SQL instalable, funciones y RLS
 scripts/seed/        datos maestros
 tests/               pruebas unitarias
 docs/                guías técnicas y de usuario
+
 ```
